@@ -33,7 +33,7 @@ func NewVm() *Vm {
 		Registers: make(map[string]*Register),
 		Stack:     NewStack(),
 		opMap: map[byte]string{
-			0x01: "load",
+			0x01: "set",
 			0x02: "print",
 			0x03: "add",
 			0x04: "mul",
@@ -43,6 +43,9 @@ func NewVm() *Vm {
 			0x08: "equal",
 			0x09: "left_shift",
 			0x10: "right_shift",
+			0x11: "mov",
+			0x12: "load",
+			0x13: "pop",
 		},
 	}
 
@@ -70,7 +73,7 @@ func (vm *Vm) Run(bytecode []byte) {
 	vm.ByteCode = bytecode
 
 	opMap := map[byte]func(int) int{
-		0x01: vm.Load,
+		0x01: vm.Set,
 		0x02: vm.Print,
 		0x03: vm.Add,
 		0x04: vm.Mul,
@@ -80,6 +83,9 @@ func (vm *Vm) Run(bytecode []byte) {
 		0x08: vm.Equal,
 		0x09: vm.LeftShift,
 		0x10: vm.RightShift,
+		0x11: vm.Mov,
+		0x12: vm.Load,
+		0x13: vm.Pop,
 	}
 
 	for i := 0; i < len(vm.ByteCode); {
