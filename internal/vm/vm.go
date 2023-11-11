@@ -1,105 +1,75 @@
 package vm
 
 import (
+	"fmt"
 	"log"
 )
 
-type Vm struct {
-	Stack     *Stack
-	Registers map[string]*Register
-	opMap     map[byte]string
+func NewVm(byteCode []byte) *Vm {
+	fmt.Println("Bytecode:", byteCode)
 
-	ByteCode []byte
-}
-
-type OperationNotFoundError struct {
-	Operation string
-}
-
-type InvalidOperationError struct {
-	Reason string
-}
-
-func (e *OperationNotFoundError) Error() string {
-	return "Operation not found: " + e.Operation
-}
-
-func (e *InvalidOperationError) Error() string {
-	return "Invalid operation: " + e.Reason
-}
-
-func NewVm() *Vm {
-	V := Vm{
-		Registers: make(map[string]*Register),
-		Stack:     NewStack(),
-		opMap: map[byte]string{
-			0x01: "set",
-			0x02: "print",
-			0x03: "add",
-			0x04: "mul",
-			0x05: "push",
-			0x06: "div",
-			0x07: "xor",
-			0x08: "equal",
-			0x09: "left_shift",
-			0x10: "right_shift",
-			0x11: "mov",
-			0x12: "load",
-			0x13: "pop",
+	v := Vm{
+		ram:      []byte{},
+		byteCode: byteCode,
+		registers: map[byte]byte{
+			PTR: 0,
 		},
 	}
 
-	return &V
+	v.init()
+	return &v
 }
 
-func (vm *Vm) GetRegister(name string) *Register {
-	if reg, ok := vm.Registers[name]; ok {
-		return reg
+func (vm *Vm) init() {
+	vm.op = map[int]func(*Vm){
+		EXIT:                     _EXIT,
+		LOAD_STRING:              _LOAD_STRING,
+		LOAD_NUM:                 _LOAD_NUM,
+		LOAD_FLOAT:               _LOAD_FLOAT,
+		LOAD_LONG_NUM:            _LOAD_LONG_NUM,
+		LOAD_ARRAY:               _LOAD_ARRAY,
+		COMP_EQUAL:               _COMP_EQUAL,
+		COMP_NOT_EQUAL:           _COMP_NOT_EQUAL,
+		COMP_LESS_THAN:           _COMP_LESS_THAN,
+		COMP_GREATHER_THAN:       _COMP_GREATHER_THAN,
+		COMP_LESS_THAN_EQUAL:     _COMP_LESS_THAN_EQUAL,
+		COMP_GREATHER_THAN_EQUAL: _COMP_GREATHER_THAN_EQUAL,
+		ADD:                      _ADD,
+		MUL:                      _MUL,
+		DIV:                      _DIV,
+		SUB:                      _SUB,
+		JUMP:                     _JUMP,
+		COND_JUMP:                _COND_JUMP,
+		JUMP_COND_NEG:            _JUMP_COND_NEG,
+		COPY:                     _COPY,
 	}
-
-	return nil
 }
 
-func (vm *Vm) SetRegister(name string, value int) {
-	if reg, ok := vm.Registers[name]; ok {
-		reg.SetValue(value)
-	} else {
-		reg := NewRegister(name, value)
-		vm.Registers[name] = reg
-	}
+func (vm *Vm) getDstLeftRight() (byte, byte, byte) {
+	return vm.getByte(), vm.getByte(), vm.getByte()
 }
 
-func (vm *Vm) Run(bytecode []byte) {
-	vm.ByteCode = bytecode
+func (vm *Vm) getByte() byte {
+	defer func() {
+		vm.registers[PTR]++
+	}()
 
-	opMap := map[byte]func(int) int{
-		0x01: vm.Set,
-		0x02: vm.Print,
-		0x03: vm.Add,
-		0x04: vm.Mul,
-		0x05: vm.Push,
-		0x06: vm.Div,
-		0x07: vm.Xor,
-		0x08: vm.Equal,
-		0x09: vm.LeftShift,
-		0x10: vm.RightShift,
-		0x11: vm.Mov,
-		0x12: vm.Load,
-		0x13: vm.Pop,
-	}
+	return vm.byteCode[vm.registers[PTR]]
+}
 
-	for i := 0; i < len(vm.ByteCode); {
-		op := vm.ByteCode[i]
+func (vm *Vm) Run() error {
+	for int(vm.registers[PTR]) < len(vm.byteCode) {
+		op := vm.getByte()
 
-		fn, exists := opMap[op]
-		if exists {
-			i += fn(i)
-		} else {
-			log.Printf("Unrecognized opcode: %X\n", op)
-			break
+		if _, ok := vm.op[int(op)]; !ok {
+			return fmt.Errorf("invalid op: %v", op)
 		}
 
-		//log.Println(vm.Registers)
-		//log.Println(vm.Stack)
+		vm.op[int(op)](vm)
+		log.Printf("[ptr+%v] %v - %v", vm.registers[PTR], op, vm.registers)
 	}
+
+	vm.showReg()
+	vm.showRam()
+	return nil
 }
