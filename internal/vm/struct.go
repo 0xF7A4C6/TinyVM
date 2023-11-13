@@ -43,6 +43,17 @@ const (
 	MUL = 101
 	SUB = 102
 	DIV = 103
+
+	// stack
+	POP  = 110
+	PUSH = 111
+	LEN  = 112
+	TOP  = 113
+
+	// binding
+	CALL_BIND     = 120
+	BIND_ADD      = 121
+	BIND_HTTP_REQ = 122
 )
 
 type Vm struct {
@@ -50,4 +61,6 @@ type Vm struct {
 	registers map[byte]byte
 	byteCode  []byte
 	ram       []byte
+	stack     *Stack
+	binds     map[int]func(*Vm) int
 }

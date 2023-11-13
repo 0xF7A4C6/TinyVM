@@ -182,3 +182,47 @@ func _SUB(v *Vm) {
 	dst, src0, src1 := v.getDstLeftRight()
 	v.setReg(dst, v.registers[src0]-v.registers[src1])
 }
+
+/*
+	Stack
+*/
+func _POP(v *Vm) {
+	v.stack.pop()
+}
+
+func _PUSH(v *Vm) {
+	val := v.getByte()
+	v.stack.push(val)
+}
+
+// len, dst
+func _LEN(v *Vm) {
+	dst := v.getByte()
+	
+	len := v.stack.len()
+	v.setReg(dst, byte(len))
+}
+
+func _TOP(v *Vm) {
+	dst := v.getByte()
+	
+	len := v.stack.top()
+	v.setReg(dst, byte(len))
+}
+
+/*
+	Binding
+*/
+
+// call_bind, dst, bind_id (take params from stack)
+func _CALL_BIND(v *Vm) {
+	dst := v.getByte()
+	bind_id := v.getByte()
+
+
+	if _, ok := v.binds[int(bind_id)]; !ok {
+		v.setReg(dst, 0)
+	}
+
+	v.setReg(dst, byte(v.binds[int(bind_id)](v)))
+}

@@ -19,3 +19,12 @@ func (vm *Vm) setRam(reg byte, value []byte) {
 	vm.registers[reg] = byte(ptr)
 	vm.registers[reg+1] = byte(len(value))
 }
+
+func (vm *Vm) getString(ptr, len int) string {
+	str := ""
+	for i := 0; i < int(len); i++ {
+		str += fmt.Sprintf("%c", vm.ram[int(ptr)+i])
+	}
+
+	return str
+}

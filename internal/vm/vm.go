@@ -10,6 +10,7 @@ func NewVm(byteCode []byte) *Vm {
 
 	v := Vm{
 		ram:      []byte{},
+		stack:    NewStack(),
 		byteCode: byteCode,
 		registers: map[byte]byte{
 			PTR: 0,
@@ -22,26 +23,43 @@ func NewVm(byteCode []byte) *Vm {
 
 func (vm *Vm) init() {
 	vm.op = map[int]func(*Vm){
-		EXIT:                     _EXIT,
-		LOAD_STRING:              _LOAD_STRING,
-		LOAD_NUM:                 _LOAD_NUM,
-		LOAD_FLOAT:               _LOAD_FLOAT,
-		LOAD_LONG_NUM:            _LOAD_LONG_NUM,
-		LOAD_ARRAY:               _LOAD_ARRAY,
+		EXIT: _EXIT,
+
+		LOAD_STRING:   _LOAD_STRING,
+		LOAD_NUM:      _LOAD_NUM,
+		LOAD_FLOAT:    _LOAD_FLOAT,
+		LOAD_LONG_NUM: _LOAD_LONG_NUM,
+		LOAD_ARRAY:    _LOAD_ARRAY,
+
 		COMP_EQUAL:               _COMP_EQUAL,
 		COMP_NOT_EQUAL:           _COMP_NOT_EQUAL,
 		COMP_LESS_THAN:           _COMP_LESS_THAN,
 		COMP_GREATHER_THAN:       _COMP_GREATHER_THAN,
 		COMP_LESS_THAN_EQUAL:     _COMP_LESS_THAN_EQUAL,
 		COMP_GREATHER_THAN_EQUAL: _COMP_GREATHER_THAN_EQUAL,
-		ADD:                      _ADD,
-		MUL:                      _MUL,
-		DIV:                      _DIV,
-		SUB:                      _SUB,
-		JUMP:                     _JUMP,
-		COND_JUMP:                _COND_JUMP,
-		JUMP_COND_NEG:            _JUMP_COND_NEG,
-		COPY:                     _COPY,
+
+		ADD: _ADD,
+		MUL: _MUL,
+		DIV: _DIV,
+		SUB: _SUB,
+
+		JUMP:          _JUMP,
+		COND_JUMP:     _COND_JUMP,
+		JUMP_COND_NEG: _JUMP_COND_NEG,
+
+		COPY: _COPY,
+
+		CALL_BIND:     _CALL_BIND,
+
+		POP:  _POP,
+		PUSH: _PUSH,
+		LEN:  _LEN,
+		TOP:  _TOP,
+	}
+
+	vm.binds = map[int]func(*Vm) int{
+		BIND_ADD: _BIND_ADD,
+		BIND_HTTP_REQ: _BIND_HTTP_REQ,
 	}
 }
 
@@ -71,5 +89,6 @@ func (vm *Vm) Run() error {
 
 	vm.showReg()
 	vm.showRam()
+	vm.stack.showStack()
 	return nil
 }
